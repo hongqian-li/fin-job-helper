@@ -26,5 +26,5 @@ Early prompt caused the model to echo placeholder text (`Yes / No` literally) in
 **Design decision: rule-based Finnish detection layer**
 Keyword scan runs first: `Finnish required`, `Native Finnish`, `sujuva suomi`, `äidinkieli`, etc. If any match → hard Yes, no model call needed. Model is used only as fallback for ambiguous cases. This is the same hybrid architecture as the thesis GDPR classifier.
 
-**Interview talking point:**
-> "In the first real-world test, the model marked 'Native Finnish speaker required' as not requiring Finnish — then contradicted itself two sentences later. That single test made the design rationale for the rule layer concrete. It's the same reason my thesis used deterministic keyword detection as the first gate before any LLM call: auditability and reliability on the cases that matter most."
+**Key takeaway:**
+> In the first real-world test, the model marked "Native Finnish speaker required" as not requiring Finnish — then contradicted itself two sentences later. That single test made the design rationale for the rule layer concrete. It's the same reason the thesis used deterministic keyword detection as the first gate before any LLM call: auditability and reliability on the cases that matter most.
