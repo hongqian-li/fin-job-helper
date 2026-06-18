@@ -7,17 +7,22 @@ from profile import MY_PROFILE  # the candidate background text, kept in its own
 # A single input() call reads only one line, and it stops at the first
 # Enter key press. A real job description is many lines/paragraphs, so one
 # input() is not enough -- we need to keep reading lines until the user
-# signals "I'm done pasting" by entering a blank line.
+# signals "I'm done pasting".
+#
+# Real JDs almost always have blank lines between paragraphs (section
+# breaks, bullet groups, etc.), so using "an empty line" as the stop
+# signal would cut the JD off after the first paragraph. Instead we use a
+# distinct marker line ("END") that won't appear by accident in real text.
 
 print("Paste the job description below.")
-print("When you're done, press Enter on an empty line to finish:\n")
+print("When you're done, type END on its own line and press Enter:\n")
 
 lines = []  # collects each line of the pasted JD
 
 while True:
     line = input()  # read one line of text from the terminal
-    if line == "":
-        # an empty line means the user has finished pasting the JD
+    if line.strip() == "END":
+        # the END marker means the user has finished pasting the JD
         break
     lines.append(line)
 
