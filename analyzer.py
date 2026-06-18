@@ -30,6 +30,13 @@ jd_text = "\n".join(lines)
 # then WHAT to evaluate (the JD), then exactly HOW to answer (the output
 # format). Without the format spec, the model would reply in free-form
 # prose that's hard to read consistently across different JDs.
+#
+# The format block below is written as a literal template with placeholder
+# instructions ("replace ... with", "replace Yes / No with exactly one
+# word") because earlier testing showed the model would otherwise echo the
+# placeholders themselves (e.g. print "Yes / No" instead of picking one).
+# Telling it explicitly to replace each placeholder, and to skip any
+# preamble, removes the ambiguity that caused that.
 prompt = f"""You are screening a job description for a candidate with the
 following background:
 
@@ -39,13 +46,14 @@ Here is the job description to evaluate:
 
 {jd_text}
 
-Respond using exactly this format, with no extra text before or after it:
+Your entire response must follow this exact format, do not add any
+introduction or explanation:
 
-Finnish language required: Yes / No (reason: ...)
-Match score: X/10
-Matching points: ...
-Gaps: ...
-Recommendation: ...
+Finnish language required (does the JD itself explicitly ask for Finnish, ignore the candidate's own language skills): [Yes or No] (reason: [quote the exact phrase from the JD that mentions Finnish, or say "not mentioned"])
+Match score: [replace X with a number] /10
+Matching points: [replace ... with the actual matching points]
+Gaps: [replace ... with the actual gaps]
+Recommendation: [replace ... with the actual recommendation]
 """
 
 OLLAMA_URL = "http://localhost:11434/api/generate"  # same endpoint as test_ollama.py
