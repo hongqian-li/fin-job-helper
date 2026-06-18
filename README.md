@@ -7,6 +7,8 @@ pip install -r requirements.txt
 ollama pull llama3.2
 ```
 
+See [FINDINGS.md](FINDINGS.md) for what V1 testing surfaced and why V2 is designed the way it is.
+
 ## Progress
 
 - [x] Step 0 — confirm Ollama runs locally
