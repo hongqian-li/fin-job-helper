@@ -9,6 +9,11 @@ ollama pull llama3.2
 
 See [FINDINGS.md](FINDINGS.md) for what V1 testing surfaced and why V2 is designed the way it is.
 
+## How to use (V1)
+
+Run `python analyzer.py`, paste a job description, type `END` on a new line, and press Enter.
+The tool will output a match score and hiring recommendation based on the candidate profile in `profile.py`.
+
 ## Progress
 
 - [x] Step 0 — confirm Ollama runs locally
