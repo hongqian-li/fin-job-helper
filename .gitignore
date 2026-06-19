@@ -220,3 +220,7 @@ __marimo__/
 # fin-job-helper: local judgment history, not source -- contains pasted
 # JD snippets and model output, regenerated locally by history.py
 history.json
+
+# fin-job-helper: local vector database, not source -- regenerated
+# locally by build_profile_db.py
+chroma_db/
