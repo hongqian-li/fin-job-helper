@@ -26,6 +26,17 @@ st.markdown(
         color: #f0f0f0;
     }
 
+    /* Streamlit's built-in icons (e.g. the expander's arrow) are ligature
+    glyphs in the "Material Symbols Rounded" icon font -- forcing
+    monospace on them above breaks the ligature and renders the literal
+    icon name as clipped text (e.g. "keyboard_arrow_right" showing as a
+    stray "ar"). Naming the icon font explicitly restores the glyph
+    ("revert" doesn't work here: it skips every author-origin rule,
+    including Streamlit's own icon-font declaration, not just ours). */
+    [data-testid="stIconMaterial"] {
+        font-family: 'Material Symbols Rounded' !important;
+    }
+
     /* Text area */
     .stTextArea textarea {
         background-color: #111111;
@@ -149,8 +160,14 @@ if clicked:
         )
 
     relevant_chunks = retrieve_relevant_chunks(jd_text)
-    with st.expander("▸ RETRIEVED PROFILE CHUNKS", expanded=False):
-        st.code(relevant_chunks, language=None)
+    with st.expander("PROFILE CHUNKS", expanded=False):
+        st.markdown(
+            f'<div style="font-family: Courier New, monospace; color: #f0f0f0; '
+            f'font-size: 14px; white-space: pre-wrap; word-wrap: break-word; '
+            f'padding: 8px;">'
+            f'{relevant_chunks}</div>',
+            unsafe_allow_html=True,
+        )
 
     # Same prompt template as analyzer.py's RAG version (V3 step 3) --
     # only the most relevant profile chunks are sent, not the full
@@ -188,6 +205,15 @@ Recommendation: [replace ... with the actual recommendation]
         data = response.json()
 
     verdict = data["response"]
-    st.code(verdict, language=None)
+    # A plain wrapping div instead of st.code: st.code never wraps long
+    # lines, forcing a horizontal scrollbar to read the full verdict --
+    # pre-wrap/break-word lets it wrap within the page width instead.
+    st.markdown(
+        f'<div style="font-family: Courier New, monospace; color: #f0f0f0; '
+        f'font-size: 14px; white-space: pre-wrap; word-wrap: break-word; '
+        f'background-color: #111111; border: 1px solid #333; padding: 12px;">'
+        f'{verdict}</div>',
+        unsafe_allow_html=True,
+    )
 
     save_judgment(jd_text, finnish_check, verdict=verdict)

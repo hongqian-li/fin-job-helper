@@ -37,5 +37,6 @@ The tool will:
 - [x] V3 step 3 — RAG wired into `analyzer.py`; model now sees only the most relevant profile chunks
 - [x] V3 fix — negation handling in `finnish_detector.py` ("No Finnish required" no longer false-positives)
 - [x] V3.5 — Streamlit web UI with terminal aesthetic (`app.py`)
+- [x] V3.5 fix — UI polish: expander icon font, label clipping, profile-chunk font-size consistency, verdict line wrapping (no horizontal scroll)
 - [ ] V4 — agent + tool calling (fetch JD by URL, draft cover letter)
 - [ ] V5 — evaluation harness + observability
