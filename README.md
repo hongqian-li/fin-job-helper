@@ -23,7 +23,9 @@ The tool will output a match score and hiring recommendation based on the candid
 - [x] V1 step 4 — build the combined prompt (profile + JD + output format)
 - [x] V1 step 5 — tune the prompt until output format is stable
 - [x] V1 step 6 — tested against a real job description (M-Files AI Systems Specialist); confirmed the model is unreliable at detecting explicit Finnish-language requirements, motivating the V2 rule-based layer
-- [ ] V2 — rule-based Finnish-language backstop + save judgment history
+- [x] V2 step 1 — `finnish_detector.py`: keyword scan for Finnish requirements, separates hard requirement from nice-to-have
+- [x] V2 step 2 — Finnish detector wired into `analyzer.py`; runs before the model, hard stop exits without a model call
+- [x] V2 step 3 — `history.py`: saves every judgment to `history.json` (gitignored)
 - [ ] V3 — RAG over profile/resume with ChromaDB
 - [ ] V4 — agent + tool calling (fetch JD by URL, draft cover letter)
 - [ ] V5 — evaluation harness + observability
