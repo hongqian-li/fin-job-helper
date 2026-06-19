@@ -13,14 +13,21 @@ See [FINDINGS.md](FINDINGS.md) for what V1 testing surfaced and why V2 is design
 
 ## How to use
 
-Run `python analyzer.py`, paste a job description, type `END` on a new line, and press Enter.
-The tool will:
+**Web UI (recommended):**
+```
+streamlit run app.py
+```
+Open http://localhost:8501, paste a JD, click `[ SCREEN ]`.
 
-- Check for Finnish language requirements first (rule-based, no model call)
-- Hard stop if Finnish is required, with the matched phrase shown
-- Flag Finnish as nice-to-have if mentioned as an advantage
-- Retrieve the most relevant chunks of your profile (`profile.py`, indexed via `build_profile_db.py`) for this specific JD, then run a match score and recommendation against those chunks
-- Save every judgment to `history.json` (local only, gitignored)
+**Terminal:**
+```
+python analyzer.py
+```
+Paste a job description, type `END` on a new line, and press Enter.
+
+Both interfaces run the same checks: Finnish-language requirement detection first (rule-based, no model call; hard stop if required, notice if mentioned as a nice-to-have), then RAG retrieval of the most relevant profile chunks, a match score and recommendation, and every judgment saved to `history.json` (local only, gitignored).
+
+**Note:** The candidate profile in `profile.py` and the ChromaDB index in `chroma_db/` are personalised to the author. To use this tool for your own job search, update `profile.py` with your own background and re-run `python build_profile_db.py` to rebuild the index.
 
 ## Progress
 
