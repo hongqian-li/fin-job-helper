@@ -5,6 +5,7 @@ import sys  # used to stop the script early, before any model call, on a hard Fi
 import requests  # same library used in test_ollama.py to call the local Ollama API
 from profile import MY_PROFILE  # the candidate background text, kept in its own file
 from finnish_detector import detect_finnish_requirement  # deterministic keyword check, see finnish_detector.py for why this exists alongside the model
+from history import save_judgment  # persists every screening result to history.json, see history.py
 
 # A single input() call reads only one line, and it stops at the first
 # Enter key press. A real job description is many lines/paragraphs, so one
@@ -47,6 +48,10 @@ if finnish_check["required"]:
     print("\n--- Hard stop: Finnish required ---")
     print(f'Matched phrase: "{finnish_check["matched_phrase"]}"')
     print("Skipping model call -- this role requires Finnish.")
+    # Logged even though the model was never called -- a hard stop is
+    # still a real judgment ("skip this role"), so it belongs in the same
+    # history as model-scored verdicts, not silently dropped.
+    save_judgment(jd_text, finnish_check, verdict="skipped - Finnish required")
     sys.exit()
 
 if finnish_check["mentioned_as_advantage"]:
@@ -99,3 +104,5 @@ data = response.json()
 
 print("\n--- Verdict ---")
 print(data["response"])
+
+save_judgment(jd_text, finnish_check, verdict=data["response"])

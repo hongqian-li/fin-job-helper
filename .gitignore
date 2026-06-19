@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# fin-job-helper: local judgment history, not source -- contains pasted
+# JD snippets and model output, regenerated locally by history.py
+history.json
