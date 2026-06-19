@@ -46,14 +46,35 @@ FINNISH_ADVANTAGE_PATTERNS = [
 ]
 
 
-def _find_first_match(jd_text, patterns):
+# Negation words that can flip a requirement phrase's meaning, e.g. "No
+# Finnish required" contains the literal substring "Finnish required" but
+# does not actually require Finnish. Checked only on the requirement
+# patterns -- an "advantage" phrase like "Finnish is a plus" doesn't have
+# this problem in the same way, so it isn't worth the extra complexity
+# there.
+NEGATION_WORDS = ["no", "not", "don't", "doesn't"]
+
+
+def _is_negated(jd_text, match_start):
+    # Only look at the 10 characters immediately before the match (e.g.
+    # "No " or "is not "), rather than scanning the whole JD, since a
+    # negation word far earlier in the text isn't actually negating this
+    # specific phrase.
+    preceding_text = jd_text[max(0, match_start - 10):match_start].lower()
+    return any(word in preceding_text for word in NEGATION_WORDS)
+
+
+def _find_first_match(jd_text, patterns, check_negation=False):
     for pattern in patterns:
         # re.escape treats the pattern as a literal string rather than a
         # regex, since we want a plain case-insensitive substring match,
         # not regex syntax (in case a future pattern contains characters
-        # like "." or "+").
-        match = re.search(re.escape(pattern), jd_text, re.IGNORECASE)
-        if match:
+        # like "." or "+"). finditer (not search) so that a negated first
+        # occurrence doesn't stop us from finding a real, non-negated
+        # occurrence of the same pattern later in the text.
+        for match in re.finditer(re.escape(pattern), jd_text, re.IGNORECASE):
+            if check_negation and _is_negated(jd_text, match.start()):
+                continue
             # match.group(0) returns the actual substring as it appears in
             # jd_text (original casing), not the canonical pattern from our
             # list -- this preserves the real quote from the JD for the
@@ -75,7 +96,9 @@ def detect_finnish_requirement(jd_text):
             "advantage_phrase": str or None,
         }
     """
-    required_match = _find_first_match(jd_text, FINNISH_REQUIREMENT_PATTERNS)
+    required_match = _find_first_match(
+        jd_text, FINNISH_REQUIREMENT_PATTERNS, check_negation=True
+    )
     if required_match:
         # A hard requirement takes priority: if a JD somehow states both
         # "Finnish required" and "Finnish is a plus" elsewhere, the
@@ -106,13 +129,17 @@ def detect_finnish_requirement(jd_text):
 
 if __name__ == "__main__":
     # Quick manual test: a clear English match, a Finnish match in a
-    # different case, a "nice to have" mention, and a JD with no Finnish
-    # mention at all.
+    # different case, a "nice to have" mention, a JD with no Finnish
+    # mention at all, and the three negation cases that motivated the
+    # negation check above.
     samples = [
         "We require native Finnish speakers for this customer-facing role.",
         "Hakijalta edellytetään SUOMEN KIELEN TAITOA ja hyvää englannin taitoa.",
         "Finnish is an advantage but not a requirement for this role.",
         "This role is fully remote and English is the working language.",
+        "No Finnish required",
+        "Finnish required",
+        "Native Finnish speaker required",
     ]
 
     for sample in samples:

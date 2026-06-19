@@ -3,9 +3,9 @@
 
 import sys  # used to stop the script early, before any model call, on a hard Finnish requirement
 import requests  # same library used in test_ollama.py to call the local Ollama API
-from profile import MY_PROFILE  # the candidate background text, kept in its own file
 from finnish_detector import detect_finnish_requirement  # deterministic keyword check, see finnish_detector.py for why this exists alongside the model
 from history import save_judgment  # persists every screening result to history.json, see history.py
+from retriever import retrieve_relevant_chunks  # RAG lookup against the ChromaDB profile index, see retriever.py
 
 # A single input() call reads only one line, and it stops at the first
 # Enter key press. A real job description is many lines/paragraphs, so one
@@ -59,6 +59,18 @@ if finnish_check["mentioned_as_advantage"]:
     print(f'Finnish is mentioned as a nice-to-have: "{finnish_check["advantage_phrase"]}"')
     print("Continuing to model evaluation.\n")
 
+# This is RAG (retrieval-augmented generation): instead of sending the
+# model the entire candidate profile every time (V1/V2's approach), we
+# first look up which profile chunks are most relevant to this specific
+# JD and send only those. This keeps the prompt shorter and more focused
+# as the profile grows (e.g. once it has many projects/experiences, most
+# of them won't be relevant to any one JD), and is the same lookup
+# retriever.py's own test demonstrates.
+relevant_chunks = retrieve_relevant_chunks(jd_text)
+
+print("\n--- Retrieved profile chunks ---")
+print(relevant_chunks)
+
 # The prompt has three parts, in this order, because that's the order the
 # model needs the information in: first WHO the candidate is (context),
 # then WHAT to evaluate (the JD), then exactly HOW to answer (the output
@@ -72,10 +84,11 @@ if finnish_check["mentioned_as_advantage"]:
 # any preamble, removes the ambiguity that caused that. The Finnish-
 # language line that used to live here has been removed -- that judgment
 # is now made by the rule layer above, before the model is ever called.
-prompt = f"""You are screening a job description for a candidate with the
-following background:
+prompt = f"""You are screening a job description for a candidate. Here are
+the most relevant parts of the candidate's background for this specific
+role (retrieved from their full profile, not the whole profile):
 
-{MY_PROFILE}
+{relevant_chunks}
 
 Here is the job description to evaluate:
 
