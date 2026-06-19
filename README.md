@@ -9,10 +9,16 @@ ollama pull llama3.2
 
 See [FINDINGS.md](FINDINGS.md) for what V1 testing surfaced and why V2 is designed the way it is.
 
-## How to use (V1)
+## How to use
 
 Run `python analyzer.py`, paste a job description, type `END` on a new line, and press Enter.
-The tool will output a match score and hiring recommendation based on the candidate profile in `profile.py`.
+The tool will:
+
+- Check for Finnish language requirements first (rule-based, no model call)
+- Hard stop if Finnish is required, with the matched phrase shown
+- Flag Finnish as nice-to-have if mentioned as an advantage
+- Run a match score and recommendation against your profile in `profile.py`
+- Save every judgment to `history.json` (local only, gitignored)
 
 ## Progress
 
