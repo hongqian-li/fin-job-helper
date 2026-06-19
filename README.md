@@ -32,6 +32,9 @@ The tool will:
 - [x] V2 step 1 — `finnish_detector.py`: keyword scan for Finnish requirements, separates hard requirement from nice-to-have
 - [x] V2 step 2 — Finnish detector wired into `analyzer.py`; runs before the model, hard stop exits without a model call
 - [x] V2 step 3 — `history.py`: saves every judgment to `history.json` (gitignored)
-- [ ] V3 — RAG over profile/resume with ChromaDB
+- [x] V3 step 1 — `build_profile_db.py`: chunk profile into ChromaDB vector index
+- [x] V3 step 2 — `retriever.py`: semantic chunk retrieval against JD
+- [x] V3 step 3 — RAG wired into `analyzer.py`; model now sees only the most relevant profile chunks
+- [x] V3 fix — negation handling in `finnish_detector.py` ("No Finnish required" no longer false-positives)
 - [ ] V4 — agent + tool calling (fetch JD by URL, draft cover letter)
 - [ ] V5 — evaluation harness + observability
