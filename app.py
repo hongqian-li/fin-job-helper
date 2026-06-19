@@ -3,11 +3,28 @@
 # blocks (finnish_detector.py, retriever.py, history.py) but drives them
 # from a browser UI instead of input()/print().
 
+import html
 import streamlit as st
 import requests
 from finnish_detector import detect_finnish_requirement
 from retriever import retrieve_relevant_chunks
 from history import save_judgment
+
+
+def to_safe_html(text):
+    # html.escape neutralizes "<"/"&" so the model's own output can't
+    # break our markup. Converting "\n" to "<br>" (rather than relying on
+    # CSS white-space: pre-wrap alone) matters for a different reason:
+    # Streamlit's underlying Markdown parser treats a <div> with no blank
+    # line after it as one literal "raw HTML block" -- but a blank LINE
+    # inside that block ends raw mode and resumes Markdown parsing for
+    # everything after it. If the model's verdict happens to have a blank
+    # line before "Gaps:", those "- " lines get parsed into real <li>
+    # bullets (with browser-default spacing) while earlier "- " lines
+    # stay literal text -- the inconsistent spacing seen in testing.
+    # Replacing newlines with <br> removes the blank lines from the
+    # source entirely, so the whole block stays raw HTML throughout.
+    return html.escape(text).replace("\n", "<br>")
 
 # Terminal aesthetic: injected once, before any other Streamlit calls, so
 # the whole page (including widgets rendered below) picks it up. Hidden
@@ -165,7 +182,7 @@ if clicked:
             f'<div style="font-family: Courier New, monospace; color: #f0f0f0; '
             f'font-size: 14px; white-space: pre-wrap; word-wrap: break-word; '
             f'padding: 8px;">'
-            f'{relevant_chunks}</div>',
+            f'{to_safe_html(relevant_chunks)}</div>',
             unsafe_allow_html=True,
         )
 
@@ -212,7 +229,7 @@ Recommendation: [replace ... with the actual recommendation]
         f'<div style="font-family: Courier New, monospace; color: #f0f0f0; '
         f'font-size: 14px; white-space: pre-wrap; word-wrap: break-word; '
         f'background-color: #111111; border: 1px solid #333; padding: 12px;">'
-        f'{verdict}</div>',
+        f'{to_safe_html(verdict)}</div>',
         unsafe_allow_html=True,
     )
 
