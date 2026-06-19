@@ -9,7 +9,7 @@ pip install -r requirements.txt
 ollama pull llama3.2
 ```
 
-See [FINDINGS.md](FINDINGS.md) for what V1 testing surfaced and why V2 is designed the way it is.
+See [FINDINGS.md](FINDINGS.md) for the testing notes and design rationale behind each version, from V1's model-reliability issues through the V2 rule layer, V3's RAG architecture, and the V3.5 UI rationale.
 
 ## How to use
 
