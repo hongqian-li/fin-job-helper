@@ -1,6 +1,8 @@
 # fin-job-helper
 Agentic job-search assistant: RAG + hybrid rule/LLM screening + tool calling, built for the Finnish AI/cloud job market.
 
+![fin-job-helper screenshot](docs/screenshot.png)
+
 ## Setup
 ```
 pip install -r requirements.txt
