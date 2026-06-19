@@ -1,8 +1,10 @@
 # This is the main V1 script: read a JD -> build a prompt with the
 # candidate profile -> send to Ollama -> print the verdict.
 
+import sys  # used to stop the script early, before any model call, on a hard Finnish requirement
 import requests  # same library used in test_ollama.py to call the local Ollama API
 from profile import MY_PROFILE  # the candidate background text, kept in its own file
+from finnish_detector import detect_finnish_requirement  # deterministic keyword check, see finnish_detector.py for why this exists alongside the model
 
 # A single input() call reads only one line, and it stops at the first
 # Enter key press. A real job description is many lines/paragraphs, so one
@@ -30,6 +32,28 @@ while True:
 # the same way it looked when it was pasted in
 jd_text = "\n".join(lines)
 
+# Run the deterministic keyword check before ever calling the model. V1
+# testing (FINDINGS.md) showed llama3.2 is unreliable at this specific
+# judgment, so the rule layer now owns the Finnish-language decision
+# instead of the model. Three possible outcomes:
+#   1. required=True   -> hard stop, no point spending a model call
+#      scoring a role the candidate can't actually take.
+#   2. mentioned_as_advantage=True -> just a notice; Finnish is optional
+#      here, so the model evaluation still proceeds normally.
+#   3. neither -> nothing to report, proceed normally.
+finnish_check = detect_finnish_requirement(jd_text)
+
+if finnish_check["required"]:
+    print("\n--- Hard stop: Finnish required ---")
+    print(f'Matched phrase: "{finnish_check["matched_phrase"]}"')
+    print("Skipping model call -- this role requires Finnish.")
+    sys.exit()
+
+if finnish_check["mentioned_as_advantage"]:
+    print("\n--- Notice ---")
+    print(f'Finnish is mentioned as a nice-to-have: "{finnish_check["advantage_phrase"]}"')
+    print("Continuing to model evaluation.\n")
+
 # The prompt has three parts, in this order, because that's the order the
 # model needs the information in: first WHO the candidate is (context),
 # then WHAT to evaluate (the JD), then exactly HOW to answer (the output
@@ -37,11 +61,12 @@ jd_text = "\n".join(lines)
 # prose that's hard to read consistently across different JDs.
 #
 # The format block below is written as a literal template with placeholder
-# instructions ("replace ... with", "replace Yes / No with exactly one
-# word") because earlier testing showed the model would otherwise echo the
-# placeholders themselves (e.g. print "Yes / No" instead of picking one).
-# Telling it explicitly to replace each placeholder, and to skip any
-# preamble, removes the ambiguity that caused that.
+# instructions ("replace ... with") because earlier testing showed the
+# model would otherwise echo the placeholders themselves instead of filling
+# them in. Telling it explicitly to replace each placeholder, and to skip
+# any preamble, removes the ambiguity that caused that. The Finnish-
+# language line that used to live here has been removed -- that judgment
+# is now made by the rule layer above, before the model is ever called.
 prompt = f"""You are screening a job description for a candidate with the
 following background:
 
@@ -54,7 +79,6 @@ Here is the job description to evaluate:
 Your entire response must follow this exact format, do not add any
 introduction or explanation:
 
-Finnish language required (does the JD itself explicitly ask for Finnish, ignore the candidate's own language skills): [Yes or No] (reason: [quote the exact phrase from the JD that mentions Finnish, or say "not mentioned"])
 Match score: [replace X with a number] /10
 Matching points: [replace ... with the actual matching points]
 Gaps: [replace ... with the actual gaps]
