@@ -36,5 +36,6 @@ The tool will:
 - [x] V3 step 2 — `retriever.py`: semantic chunk retrieval against JD
 - [x] V3 step 3 — RAG wired into `analyzer.py`; model now sees only the most relevant profile chunks
 - [x] V3 fix — negation handling in `finnish_detector.py` ("No Finnish required" no longer false-positives)
+- [x] V3.5 — Streamlit web UI with terminal aesthetic (`app.py`)
 - [ ] V4 — agent + tool calling (fetch JD by URL, draft cover letter)
 - [ ] V5 — evaluation harness + observability
