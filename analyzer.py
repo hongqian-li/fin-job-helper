@@ -155,7 +155,7 @@ if deadline:
 else:
     print("No deadline found in JD -- skipping calendar reminder.")
 
-if is_recommend_to_apply(verdict_text):
+if is_recommend_to_apply(score):
     print("Verdict recommends applying -- generating cover letter talking points.")
     talking_points = generate_cl_talking_points(jd_text, relevant_chunks, verdict_text)
     print(talking_points)

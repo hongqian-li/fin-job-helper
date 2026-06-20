@@ -212,23 +212,25 @@ def guess_job_title_and_company(jd_text):
     return "this role", "company name not detected"
 
 
-def is_recommend_to_apply(verdict_text):
+def is_recommend_to_apply(score):
     """
-    Decide whether a verdict's Recommendation line counts as "recommend
-    to apply" -- a keyword check on the Recommendation line specifically
-    (not the whole verdict), so a Gaps section that happens to mention
-    "apply" doesn't cause a false positive.
+    Decide whether a match score is high enough to count as "recommend
+    to apply".
+
+    This used to be a keyword check on the verdict's Recommendation line
+    (looking for "apply"/"recommend"/"worth applying"). Live testing
+    across 10 real verdicts (scores 6-9/10) showed it almost never fired:
+    llama3.2 consistently hedges in that line ("consider for interview",
+    "experience may be lacking") regardless of score, instead of using
+    any of those words. The model's wording was the actual problem, not
+    the specific keyword list, so no keyword list would have been
+    reliable here. A threshold on the score we already parse
+    deterministically (see parse_match_score) doesn't have that problem.
 
     Returns:
         bool
     """
-    recommendation_match = re.search(r"Recommendation:\s*(.+)", verdict_text, re.IGNORECASE)
-    if not recommendation_match:
-        return False
-
-    recommendation_line = recommendation_match.group(1).lower()
-    apply_keywords = ["apply", "recommend", "worth applying"]
-    return any(keyword in recommendation_line for keyword in apply_keywords)
+    return score is not None and score >= 7
 
 
 if __name__ == "__main__":
@@ -316,11 +318,12 @@ if __name__ == "__main__":
     print(guess_job_title_and_company(insta_digital_jd))
     print(guess_job_title_and_company("We are hiring for a great team."))
 
-    # is_recommend_to_apply: a clearly positive Recommendation line, a
-    # clearly negative one, and a Gaps section that mentions "apply" but
-    # whose Recommendation line does not -- this should NOT count as a
-    # false positive.
+    # is_recommend_to_apply: now a score threshold (>=7), not a keyword
+    # check on verdict text -- see the comment above the function for
+    # why. Check the boundary (7 vs 6) and the unparseable-score case
+    # (None should never count as "recommend to apply").
     print()
-    print(is_recommend_to_apply("Recommendation: Worth applying given the strong match."))
-    print(is_recommend_to_apply("Recommendation: Skip this role, the gaps are too large."))
-    print(is_recommend_to_apply("Gaps: candidate should apply to more senior roles.\nRecommendation: Skip."))
+    print(is_recommend_to_apply(9))
+    print(is_recommend_to_apply(7))
+    print(is_recommend_to_apply(6))
+    print(is_recommend_to_apply(None))

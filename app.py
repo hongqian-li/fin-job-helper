@@ -9,6 +9,17 @@ import requests
 from finnish_detector import detect_finnish_requirement
 from retriever import retrieve_relevant_chunks
 from history import save_judgment
+from agent import (  # V4 decision layer -- see agent.py for why each function exists
+    parse_match_score,
+    should_search_company,
+    mock_web_search,
+    extract_deadline,
+    mock_create_calendar_reminder,
+    is_recommend_to_apply,
+    generate_cl_talking_points,
+    mock_save_to_drive,
+    guess_job_title_and_company,
+)
 
 
 def to_safe_html(text):
@@ -126,6 +137,17 @@ st.markdown(
         margin-bottom: 12px;
     }
 
+    /* V4 agent decision notices -- neutral styling (not a warning or an
+    error, just "here's what the agent chose to do") so these read
+    differently from the hard-stop/advantage boxes above. */
+    .agent-notice-box {
+        background-color: #1a1a1a;
+        color: #f0f0f0;
+        border: 1px solid #555;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
     /* Remove Streamlit's default hamburger menu and footer */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -232,5 +254,50 @@ Recommendation: [replace ... with the actual recommendation]
         f'{to_safe_html(verdict)}</div>',
         unsafe_allow_html=True,
     )
+
+    # V4: once a verdict exists, the agent decides which extra tools (if
+    # any) are worth calling based on what's actually in the verdict and
+    # the JD -- not every JD triggers every tool. Same decision logic as
+    # analyzer.py's terminal version (see agent.py for why each condition
+    # was chosen), shown here as notice boxes instead of printed lines.
+    job_title, company_name = guess_job_title_and_company(jd_text)
+
+    score = parse_match_score(verdict)
+    if score is not None and should_search_company(score):
+        st.markdown(
+            f'<div class="agent-notice-box">'
+            f"Score is ambiguous — would search company info: {company_name}"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        mock_web_search(company_name)
+
+    deadline = extract_deadline(jd_text)
+    if deadline:
+        st.markdown(
+            f'<div class="agent-notice-box">'
+            f"Deadline found: {deadline} — would create calendar reminder"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        mock_create_calendar_reminder(deadline, job_title)
+
+    if is_recommend_to_apply(score):
+        talking_points = generate_cl_talking_points(jd_text, relevant_chunks, verdict)
+        with st.expander("COVER LETTER TALKING POINTS", expanded=False):
+            st.markdown(
+                f'<div style="font-family: Courier New, monospace; color: #f0f0f0; '
+                f'font-size: 14px; white-space: pre-wrap; word-wrap: break-word; '
+                f'padding: 8px;">'
+                f'{to_safe_html(talking_points)}</div>',
+                unsafe_allow_html=True,
+            )
+        mock_save_to_drive(jd_text, verdict, talking_points, job_title)
+        st.markdown(
+            f'<div class="agent-notice-box">'
+            f"Saved analysis to Google Drive: {job_title}_analysis.md"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
     save_judgment(jd_text, finnish_check, verdict=verdict)
