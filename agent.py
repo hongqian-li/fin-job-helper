@@ -57,6 +57,64 @@ def mock_web_search(company_name):
     return f"[placeholder web search result for {company_name}]"
 
 
+# Phrase patterns that commonly introduce an application deadline in a JD.
+# Each one captures whatever date text immediately follows it -- the date
+# itself is matched by DATE_PATTERN below, not hardcoded into each phrase,
+# so all four phrasings can share the same date-format coverage.
+DEADLINE_PHRASE_PATTERNS = [
+    r"apply by\s+({date})",
+    r"deadline:?\s*({date})",
+    r"no later than\s+({date})",
+    r"by the end of\s+({date})",
+]
+
+MONTH_NAMES = (
+    "January|February|March|April|May|June|July|August|September"
+    "|October|November|December"
+)
+
+# Three date shapes this is meant to catch, in the order checked below:
+# "30th of May" (day-first with "of"), "May 30th, 2026" / "May 30"
+# (month-first, day and year both optional), and "31.05.2026"
+# (numeric DD.MM.YYYY, common in Finnish JDs). re.IGNORECASE (applied at
+# the re.search call below) covers any casing of the month names.
+DATE_PATTERN = (
+    rf"(?:\d{{1,2}}(?:st|nd|rd|th)?\s+of\s+(?:{MONTH_NAMES}))"
+    rf"|(?:(?:{MONTH_NAMES})(?:\s+\d{{1,2}}(?:st|nd|rd|th)?)?(?:,?\s*\d{{4}})?)"
+    rf"|(?:\d{{1,2}}\.\d{{1,2}}\.\d{{2,4}})"
+)
+
+
+def extract_deadline(jd_text):
+    """
+    Scan jd_text for a stated application deadline (e.g. "Apply by May
+    30th, 2026", "deadline: 31.05.2026") and return the matched date text.
+
+    Returns:
+        str or None: the matched date, or None if no deadline phrase is
+        found.
+    """
+    for phrase_pattern in DEADLINE_PHRASE_PATTERNS:
+        pattern = phrase_pattern.format(date=DATE_PATTERN)
+        match = re.search(pattern, jd_text, re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+    return None
+
+
+def mock_create_calendar_reminder(deadline_text, job_title):
+    """
+    Stand-in for a real Google Calendar MCP call (to be wired up later).
+    Prints what reminder it would create and returns True so the rest of
+    the decision logic has a success signal to work with in the meantime.
+
+    Returns:
+        bool
+    """
+    print(f"[MOCK] Would create calendar reminder: Apply to {job_title} by {deadline_text}")
+    return True
+
+
 if __name__ == "__main__":
     # Quick manual test: a normal verdict, one with extra spacing around
     # the slash, and one missing the score line entirely (the edge case
@@ -77,3 +135,19 @@ if __name__ == "__main__":
 
     print()
     mock_web_search("Acme Oy")
+
+    # extract_deadline: two different phrase/date-format combinations,
+    # plus a JD with no deadline mentioned at all (the case that motivates
+    # returning None instead of raising an error).
+    print()
+    deadline_samples = [
+        "We are hiring a Cloud Engineer. Apply by May 30th, 2026 to be considered.",
+        "Open position, deadline: 31.05.2026. Send your CV.",
+        "This role is fully remote and open until filled.",
+    ]
+
+    for jd in deadline_samples:
+        print(f"JD snippet: {jd}")
+        print(f"Extracted deadline: {extract_deadline(jd)}\n")
+
+    mock_create_calendar_reminder("May 30th, 2026", "Cloud Engineer")
