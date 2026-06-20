@@ -54,8 +54,8 @@ FINNISH_ADVANTAGE_PATTERNS = [
 # there.
 NEGATION_WORDS = ["no", "not", "don't", "doesn't"]
 
-# Word-boundary regex, not a plain substring check -- a real M-Files JD
-# exposed why this matters: the text "...new technologies\nNative Finnish
+# Word-boundary regex, not a plain substring check -- a real JD exposed
+# why this matters: the text "...new technologies\nNative Finnish
 # speaker..." was wrongly treated as negated because "technologies"
 # contains the literal substring "no" (tech-no-logies). "no"/"not" are
 # common substrings inside ordinary words (technology, knowledge,
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     # Quick manual test: a clear English match, a Finnish match in a
     # different case, a "nice to have" mention, a JD with no Finnish
     # mention at all, the three negation cases that motivated the
-    # negation check above, and the M-Files case that motivated switching
+    # negation check above, and the real-JD case that motivated switching
     # that check from a substring match to a word-boundary regex --
     # "technologies" contains the literal substring "no", which used to
     # cause a false negative on a real, unrelated requirement.
