@@ -188,6 +188,49 @@ def mock_save_to_drive(jd_text, verdict_text, talking_points, job_title):
     return True
 
 
+def guess_job_title_and_company(jd_text):
+    """
+    Best-effort guess at the job title and company name, used only to
+    make printed agent-decision messages readable (e.g. "Apply to
+    {job_title} by {deadline}"). This is a heuristic, not a reliable
+    extractor -- many JDs don't state the company name in a consistent
+    format, so callers should treat the fallback placeholders as a
+    normal, expected outcome, not an error.
+
+    Looks for a "<Job Title> - <Company>" first line, the format used by
+    the Insta Digital JD already used elsewhere in this file's tests.
+
+    Returns:
+        tuple: (job_title: str, company_name: str)
+    """
+    first_line = jd_text.strip().split("\n")[0]
+
+    if " - " in first_line:
+        job_title, company_name = first_line.split(" - ", 1)
+        return job_title.strip(), company_name.strip()
+
+    return "this role", "company name not detected"
+
+
+def is_recommend_to_apply(verdict_text):
+    """
+    Decide whether a verdict's Recommendation line counts as "recommend
+    to apply" -- a keyword check on the Recommendation line specifically
+    (not the whole verdict), so a Gaps section that happens to mention
+    "apply" doesn't cause a false positive.
+
+    Returns:
+        bool
+    """
+    recommendation_match = re.search(r"Recommendation:\s*(.+)", verdict_text, re.IGNORECASE)
+    if not recommendation_match:
+        return False
+
+    recommendation_line = recommendation_match.group(1).lower()
+    apply_keywords = ["apply", "recommend", "worth applying"]
+    return any(keyword in recommendation_line for keyword in apply_keywords)
+
+
 if __name__ == "__main__":
     # Quick manual test: a normal verdict, one with extra spacing around
     # the slash, and one missing the score line entirely (the edge case
@@ -265,3 +308,19 @@ if __name__ == "__main__":
         insta_digital_talking_points,
         "Insta_Digital_Cloud_Architect",
     )
+
+    # guess_job_title_and_company: the Insta Digital JD has the
+    # "<Title> - <Company>" shape, a plain JD with no such first line
+    # doesn't -- it should fall back to placeholders, not crash.
+    print()
+    print(guess_job_title_and_company(insta_digital_jd))
+    print(guess_job_title_and_company("We are hiring for a great team."))
+
+    # is_recommend_to_apply: a clearly positive Recommendation line, a
+    # clearly negative one, and a Gaps section that mentions "apply" but
+    # whose Recommendation line does not -- this should NOT count as a
+    # false positive.
+    print()
+    print(is_recommend_to_apply("Recommendation: Worth applying given the strong match."))
+    print(is_recommend_to_apply("Recommendation: Skip this role, the gaps are too large."))
+    print(is_recommend_to_apply("Gaps: candidate should apply to more senior roles.\nRecommendation: Skip."))

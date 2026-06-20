@@ -6,6 +6,17 @@ import requests  # same library used in test_ollama.py to call the local Ollama 
 from finnish_detector import detect_finnish_requirement  # deterministic keyword check, see finnish_detector.py for why this exists alongside the model
 from history import save_judgment  # persists every screening result to history.json, see history.py
 from retriever import retrieve_relevant_chunks  # RAG lookup against the ChromaDB profile index, see retriever.py
+from agent import (  # V4 decision layer -- see agent.py for why each function exists
+    parse_match_score,
+    should_search_company,
+    mock_web_search,
+    extract_deadline,
+    mock_create_calendar_reminder,
+    is_recommend_to_apply,
+    generate_cl_talking_points,
+    mock_save_to_drive,
+    guess_job_title_and_company,
+)
 
 # A single input() call reads only one line, and it stops at the first
 # Enter key press. A real job description is many lines/paragraphs, so one
@@ -114,8 +125,42 @@ payload = {
 
 response = requests.post(OLLAMA_URL, json=payload)
 data = response.json()
+verdict_text = data["response"]
 
 print("\n--- Verdict ---")
-print(data["response"])
+print(verdict_text)
 
-save_judgment(jd_text, finnish_check, verdict=data["response"])
+# V4: once a verdict exists, the agent decides which extra tools (if
+# any) are worth calling based on what's actually in the verdict and the
+# JD -- not every JD triggers every tool. See agent.py for why each
+# condition below was chosen. Printed section headers make it visually
+# clear in the terminal which steps the agent took vs skipped.
+print("\n--- Agent decisions ---")
+
+job_title, company_name = guess_job_title_and_company(jd_text)
+
+score = parse_match_score(verdict_text)
+if score is None:
+    print("Could not parse a match score from the verdict -- skipping company search.")
+elif should_search_company(score):
+    print(f"Score {score}/10 is ambiguous -- searching company.")
+    mock_web_search(company_name)
+else:
+    print(f"Score {score}/10 is not ambiguous -- skipping company search.")
+
+deadline = extract_deadline(jd_text)
+if deadline:
+    print(f"Deadline found: {deadline} -- creating calendar reminder.")
+    mock_create_calendar_reminder(deadline, job_title)
+else:
+    print("No deadline found in JD -- skipping calendar reminder.")
+
+if is_recommend_to_apply(verdict_text):
+    print("Verdict recommends applying -- generating cover letter talking points.")
+    talking_points = generate_cl_talking_points(jd_text, relevant_chunks, verdict_text)
+    print(talking_points)
+    mock_save_to_drive(jd_text, verdict_text, talking_points, job_title)
+else:
+    print("Verdict does not recommend applying -- skipping talking points and Drive save.")
+
+save_judgment(jd_text, finnish_check, verdict=verdict_text)
