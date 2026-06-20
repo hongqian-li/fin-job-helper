@@ -49,3 +49,8 @@ A skipped role is still a decision. Logging "skipped - Finnish required" keeps t
 The `END` marker was awkward and there was no visual separation between the Finnish check, the retrieved chunks, and the verdict. Streamlit fixed both without touching the core logic — same building blocks, browser instead of terminal.
 
 Kept the terminal aesthetic on purpose. This tool has one user. It doesn't need to look friendly.
+
+## V4 findings
+
+**Known gap: cover letter talking points format is unstable across runs**
+The same prompt (`generate_cl_talking_points`), run 5 times against the identical Insta Digital JD/chunks/verdict, produced 5 different outputs. 2 of 5 runs added an unwanted preamble line ("Here are the extracted talking points...") despite the prompt explicitly saying not to add any introduction. The section title also drifted wording across runs ("this JD" / "the JD" / dropped the word entirely), and one run broke the numbered-list structure with an extra unnumbered sentence. Left as-is for now — talking points are a starting point the candidate reviews and personalizes anyway, not an authoritative verdict, so format noise matters less here than for the Finnish-requirement hard stop. Candidate for the V5 eval harness if it turns out to matter in practice.

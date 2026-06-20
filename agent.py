@@ -9,6 +9,11 @@
 # model call.
 
 import re
+import requests  # same library analyzer.py/app.py use to call the local Ollama API
+from retriever import retrieve_relevant_chunks  # used only in the __main__ test below
+
+OLLAMA_URL = "http://localhost:11434/api/generate"
+MODEL_NAME = "llama3.2"
 
 
 def parse_match_score(verdict_text):
@@ -115,6 +120,57 @@ def mock_create_calendar_reminder(deadline_text, job_title):
     return True
 
 
+def generate_cl_talking_points(jd_text, relevant_chunks, verdict_text):
+    """
+    Ask the model for structured cover-letter talking points -- not full
+    prose. The candidate should always write and personalize the actual
+    letter themselves; this only automates the tedious, mechanical part
+    (re-reading the JD for what it emphasizes most, then cross-checking
+    which background facts actually serve as evidence for that). Having
+    the model write finished paragraphs instead would mean it's doing the
+    candidate's own voice and judgment for them -- the line V4 is
+    deliberately drawn against.
+
+    Returns:
+        str: the model's structured talking-points output
+    """
+    prompt = f"""Here is a job description:
+
+{jd_text}
+
+Here is the candidate's relevant background:
+
+{relevant_chunks}
+
+Here is the match verdict already produced for this JD:
+
+{verdict_text}
+
+Extract cover-letter talking points in exactly this format, do not add
+any introduction, explanation, or full prose paragraphs:
+
+Top 3 things this JD emphasizes most:
+1. ...
+2. ...
+3. ...
+
+Matching evidence from candidate's background:
+1. [matches point 1] ...
+2. [matches point 2] ...
+3. [matches point 3] ...
+"""
+
+    payload = {
+        "model": MODEL_NAME,
+        "prompt": prompt,
+        "stream": False,
+    }
+
+    response = requests.post(OLLAMA_URL, json=payload)
+    data = response.json()
+    return data["response"]
+
+
 if __name__ == "__main__":
     # Quick manual test: a normal verdict, one with extra spacing around
     # the slash, and one missing the score line entirely (the edge case
@@ -151,3 +207,30 @@ if __name__ == "__main__":
         print(f"Extracted deadline: {extract_deadline(jd)}\n")
 
     mock_create_calendar_reminder("May 30th, 2026", "Cloud Engineer")
+
+    # generate_cl_talking_points: reuses the Insta Digital Cloud Architect
+    # JD from FINDINGS.md's "Finnish buried in a sentence" known gap.
+    # relevant_chunks comes from the real ChromaDB lookup (retriever.py),
+    # same as analyzer.py would use; verdict_text is a representative
+    # verdict in the same format the model produces in V1/V2/V3.
+    print()
+    insta_digital_jd = (
+        "Cloud Architect - Insta Digital\n\n"
+        "We are looking for a Cloud Architect to design and operate our "
+        "Azure-based infrastructure, including Terraform-driven network "
+        "architecture and CI/CD pipelines. Strong hands-on experience with "
+        "Azure, Terraform, and container orchestration is required. Good "
+        "communication skills in English and Finnish are expected, as you "
+        "will work closely with local teams."
+    )
+    insta_digital_chunks = retrieve_relevant_chunks(insta_digital_jd)
+    insta_digital_verdict = (
+        "Match score: 7/10\n"
+        "Matching points: Strong Azure/Terraform experience, hands-on "
+        "container orchestration knowledge.\n"
+        "Gaps: Finnish communication expectation, limited multi-year "
+        "industry experience.\n"
+        "Recommendation: Worth applying given the strong technical match."
+    )
+
+    print(generate_cl_talking_points(insta_digital_jd, insta_digital_chunks, insta_digital_verdict))
