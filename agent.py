@@ -171,6 +171,23 @@ Matching evidence from candidate's background:
     return data["response"]
 
 
+def mock_save_to_drive(jd_text, verdict_text, talking_points, job_title):
+    """
+    Stand-in for a real Google Drive MCP call (to be wired up later).
+    Prints what document it would save and returns True so the rest of
+    the decision logic has a success signal to work with in the
+    meantime. This function only handles "saving" -- deciding whether a
+    verdict actually qualifies as "recommend to apply" (and therefore
+    whether this should be called at all) belongs to the caller, wired
+    up in V4 step 6, not here.
+
+    Returns:
+        bool
+    """
+    print(f"[MOCK] Would save to Google Drive: {job_title}_analysis.md (JD + verdict + talking points)")
+    return True
+
+
 if __name__ == "__main__":
     # Quick manual test: a normal verdict, one with extra spacing around
     # the slash, and one missing the score line entirely (the edge case
@@ -233,4 +250,18 @@ if __name__ == "__main__":
         "Recommendation: Worth applying given the strong technical match."
     )
 
-    print(generate_cl_talking_points(insta_digital_jd, insta_digital_chunks, insta_digital_verdict))
+    insta_digital_talking_points = generate_cl_talking_points(
+        insta_digital_jd, insta_digital_chunks, insta_digital_verdict
+    )
+    print(insta_digital_talking_points)
+
+    # mock_save_to_drive: reuses the same Insta Digital JD/verdict/talking
+    # points from the test above -- this function only saves, it doesn't
+    # re-decide whether the verdict qualifies as "recommend to apply".
+    print()
+    mock_save_to_drive(
+        insta_digital_jd,
+        insta_digital_verdict,
+        insta_digital_talking_points,
+        "Insta_Digital_Cloud_Architect",
+    )
