@@ -26,6 +26,37 @@ def parse_match_score(verdict_text):
     return None
 
 
+def should_search_company(score):
+    """
+    Decide whether a match score is ambiguous enough to be worth looking
+    up the company before finalizing a recommendation.
+
+    5-7 is the chosen range because that's the zone where extra company
+    info could genuinely tip the recommendation: below 5 the match is
+    already weak enough that more research won't change the decision,
+    and above 7 the candidate is already a strong fit and doesn't need
+    extra confirmation.
+
+    Returns:
+        bool
+    """
+    return score in (5, 6, 7)
+
+
+def mock_web_search(company_name):
+    """
+    Stand-in for a real web search call (to be wired up later). Prints
+    what it would search for and returns a placeholder string so the
+    rest of the decision logic has something to work with in the
+    meantime.
+
+    Returns:
+        str: a placeholder search result
+    """
+    print(f"[MOCK] Would search web for: {company_name}")
+    return f"[placeholder web search result for {company_name}]"
+
+
 if __name__ == "__main__":
     # Quick manual test: a normal verdict, one with extra spacing around
     # the slash, and one missing the score line entirely (the edge case
@@ -39,3 +70,10 @@ if __name__ == "__main__":
     for sample in samples:
         print(f"Verdict snippet: {sample[:40]}...")
         print(f"Parsed score: {parse_match_score(sample)}\n")
+
+    # should_search_company: below the range, inside the range, above it
+    for score in (3, 6, 9):
+        print(f"Score {score} -> should_search_company: {should_search_company(score)}")
+
+    print()
+    mock_web_search("Acme Oy")
