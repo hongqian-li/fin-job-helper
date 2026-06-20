@@ -54,6 +54,17 @@ FINNISH_ADVANTAGE_PATTERNS = [
 # there.
 NEGATION_WORDS = ["no", "not", "don't", "doesn't"]
 
+# Word-boundary regex, not a plain substring check -- a real M-Files JD
+# exposed why this matters: the text "...new technologies\nNative Finnish
+# speaker..." was wrongly treated as negated because "technologies"
+# contains the literal substring "no" (tech-no-logies). "no"/"not" are
+# common substrings inside ordinary words (technology, knowledge,
+# innovation, monitor...), so matching them without \b boundaries causes
+# false negatives on real, unrelated text.
+NEGATION_PATTERN = re.compile(
+    r"\b(?:" + "|".join(re.escape(word) for word in NEGATION_WORDS) + r")\b"
+)
+
 
 def _is_negated(jd_text, match_start):
     # Only look at the 10 characters immediately before the match (e.g.
@@ -61,7 +72,7 @@ def _is_negated(jd_text, match_start):
     # negation word far earlier in the text isn't actually negating this
     # specific phrase.
     preceding_text = jd_text[max(0, match_start - 10):match_start].lower()
-    return any(word in preceding_text for word in NEGATION_WORDS)
+    return bool(NEGATION_PATTERN.search(preceding_text))
 
 
 def _find_first_match(jd_text, patterns, check_negation=False):
@@ -130,8 +141,11 @@ def detect_finnish_requirement(jd_text):
 if __name__ == "__main__":
     # Quick manual test: a clear English match, a Finnish match in a
     # different case, a "nice to have" mention, a JD with no Finnish
-    # mention at all, and the three negation cases that motivated the
-    # negation check above.
+    # mention at all, the three negation cases that motivated the
+    # negation check above, and the M-Files case that motivated switching
+    # that check from a substring match to a word-boundary regex --
+    # "technologies" contains the literal substring "no", which used to
+    # cause a false negative on a real, unrelated requirement.
     samples = [
         "We require native Finnish speakers for this customer-facing role.",
         "Hakijalta edellytetään SUOMEN KIELEN TAITOA ja hyvää englannin taitoa.",
@@ -140,6 +154,7 @@ if __name__ == "__main__":
         "No Finnish required",
         "Finnish required",
         "Native Finnish speaker required",
+        "Curiosity for learning new technologies.\nNative Finnish speaker with professional proficiency in English.",
     ]
 
     for sample in samples:
