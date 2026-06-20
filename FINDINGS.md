@@ -53,6 +53,10 @@ The `END` marker was awkward and there was no visual separation between the Finn
 
 Kept the terminal aesthetic on purpose. This tool has one user. It doesn't need to look friendly.
 
+## How V4 works
+
+After a verdict comes back, `agent.py` decides which extra tools (if any) are worth calling, based on what's actually in the verdict and the JD — not every JD triggers every tool. Three independent conditions, each checked separately: an ambiguous match score (5-7/10) triggers a company web search; an explicit application deadline found in the JD triggers a calendar reminder; a strong match (score >= 7) generates cover-letter talking points (a structured outline of what the JD emphasizes and which background facts serve as evidence — not full prose, since the candidate should always write and personalize the actual letter) and saves the full analysis. Wired into both `analyzer.py` (printed section headers) and `app.py` (notice boxes in the same dark/monospace aesthetic as the rest of the UI). Google Calendar, Google Drive, and the web search are all currently mocked (`print(f"[MOCK] ...")`) rather than real API calls — only the conditional decision logic is real so far.
+
 ## V4 findings
 
 **Known gap: cover letter talking points format is unstable across runs**
